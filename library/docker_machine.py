@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 from subprocess import Popen, PIPE
 
-
 DRIVERS = [
     'amazonec2', 'azure', 'digitalocean', 'google', 'openstack', 'rackspace',
     'softlayer', 'virtualbox', 'vmwarevcloudair', 'vmwarevsphere'
@@ -31,6 +30,10 @@ def docker_machine_exists(module):
 def docker_machine_create(module):
     params = module.params
     cmd = ['docker-machine', 'create', '--driver', params['driver']]
+    # if params['swarm'] == 'true':
+    #     cmd.extend(['--swarm'])
+    # if params['swarm-master'] == 'true':
+    #     cmd.extend(['--swarm-master'])
     if 'digitalocean' == params['driver']:
         cmd.extend([
             '--digitalocean-access-token', params['digitalocean_access_token']
@@ -47,6 +50,42 @@ def docker_machine_create(module):
             cmd.extend([
                 '--digitalocean-size', params['digitalocean_size']
             ])
+
+        if 'virtualbox' == params['driver']:
+
+            # if params['virtualbox-boot2docker-url']:
+            #     cmd.extend([
+            #         '--virtualbox-boot2docker-url', params['virtualbox-boot2docker-url']
+            #     ])
+            # if params['virtualbox-cpu-count']:
+            #     cmd.extend([
+            #         '--virtualbox-cpu-count', params['virtualbox-cpu-count']
+            #     ])
+            # if params['virtualbox-disk-size']:
+            #     cmd.extend([
+            #         '--virtualbox-disk-size', params['virtualbox-disk-size']
+            #     ])
+            # if params['virtualbox-hostonly-cidr']:
+            #     cmd.extend([
+            #         '--virtualbox-hostonly-cidr', params['virtualbox-hostonly-cidr']
+            #     ])
+            # if params['virtualbox-hostonly-nicpromisc']:
+            #     cmd.extend([
+            #         '--virtualbox-hostonly-nicpromisc', params['virtualbox-hostonly-nicpromisc']
+            #     ])
+            # if params['virtualbox-hostonly-nictype']:
+            #     cmd.extend([
+            #         '--virtualbox-hostonly-nictype', params['virtualbox-hostonly-nictype']
+            #     ])
+            # if params['virtualbox-import-boot2docker-vm']:
+            #     cmd.extend([
+            #         '--virtualbox-import-boot2docker-vm', params['virtualbox-import-boot2docker-vm']
+            #     ])
+            if params['virtualbox-memory']:
+                cmd.extend([
+                    '--virtualbox-memory', params['virtualbox-memory']
+                ])
+
     cmd.append(params['name'])
     command(module, cmd)
 
@@ -69,6 +108,8 @@ def main():
             digitalocean_image=dict(),
             digitalocean_region=dict(),
             digitalocean_size=dict(),
+
+
         ),
     )
     state = module.params['state']
@@ -86,7 +127,11 @@ def main():
                 docker_machine_create(module)
             else:
                 changed = False
-
+        elif 'virtualbox' == module.params['driver']:
+            if not docker_machine_exists(module):
+                docker_machine_create(module)
+            else:
+                changed = False
         else:
             module.fail_json(
                 msg='Driver [%s] not supported by this module. \
@@ -103,4 +148,5 @@ You may contribute it :).' % module.params['driver']
 
 
 from ansible.module_utils.basic import *
+
 main()
